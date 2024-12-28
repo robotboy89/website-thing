@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>balls</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+            background-color: #f0f0f0;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/planck/dist/planck.min.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas to fill the screen
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const pl = planck;
+
+        // Create the Box2D world
+        const world = pl.World(pl.Vec2(0, 100)); // No gravity, as we're simulating a 2D plane
+
+        // Define the edges (walls)
+        const wallThickness = 10;
+        const walls = [
+            { x: canvas.width / 2, y: 0, w: canvas.width, h: wallThickness }, // Top
+            { x: canvas.width / 2, y: canvas.height, w: canvas.width, h: wallThickness }, // Bottom
+            { x: 0, y: canvas.height / 2, w: wallThickness, h: canvas.height }, // Left
+            { x: canvas.width, y: canvas.height / 2, w: wallThickness, h: canvas.height }, // Right
+        ];
+
+        walls.forEach(({ x, y, w, h }) => {
+            const body = world.createBody();
+            body.createFixture(pl.Box(w / 2, h / 2));
+            body.setPosition(pl.Vec2(x, y));
+        });
+
+        // Create the rat body
+        const ratRadius = 50; // Size of the rat image
+        const ratBody = world.createDynamicBody({
+            position: pl.Vec2(canvas.width / 2, canvas.height / 2),
+            linearVelocity: pl.Vec2(Math.random() * 20 - 10, Math.random() * 20 - 10), // Faster initial velocity
+        });
+        ratBody.createFixture(pl.Circle(ratRadius), { restitution: 1 }); // Add restitution for bouncing
+
+        // Reduce velocity damping for faster movement
+        ratBody.setLinearDamping(0); // No slowdown
+        ratBody.setAngularDamping(0); // Keep spinning fast
+
+        // Rat image
+        const ratImage = new Image();
+        ratImage.src = 'image.png';
+
+        // Main animation loop
+        function animate() {
+            world.step(1 / 60); // Advance the physics simulation
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the rat
+            const ratPos = ratBody.getPosition();
+            const ratAngle = ratBody.getAngle();
+            ctx.save();
+            ctx.translate(ratPos.x, ratPos.y);
+            ctx.rotate(ratAngle);
+            ctx.drawImage(ratImage, -ratRadius, -ratRadius, ratRadius * 2, ratRadius * 2);
+            ctx.restore();
+
+            requestAnimationFrame(animate);
+        }
+
+        // Start animation when the rat image loads
+        ratImage.onload = animate;
+    </script>
+</body>
+</html>
